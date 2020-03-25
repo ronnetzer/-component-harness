@@ -1,20 +1,21 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {LoginComponent, User} from './login.component';
-import {NoopAnimationsModule} from "@angular/platform-browser/animations";
-import {LoginModule} from "./login.module";
-import {Component, EventEmitter, Input} from "@angular/core";
-import {By} from "@angular/platform-browser";
-import {MatSelect} from "@angular/material/select";
-import {MatOption} from "@angular/material/core";
-import {HarnessLoader} from "@angular/cdk/testing";
-import {TestbedHarnessEnvironment} from "@angular/cdk/testing/testbed";
-import {LoginComponentHarness} from "./login.harness.spec";
+import { LoginComponent, User } from './login.component';
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { LoginModule } from "./login.module";
+import { Component, EventEmitter, Input } from "@angular/core";
+import { By } from "@angular/platform-browser";
+import { MatSelect } from "@angular/material/select";
+import { MatOption } from "@angular/material/core";
+import { HarnessLoader } from "@angular/cdk/testing";
+import { TestbedHarnessEnvironment } from "@angular/cdk/testing/testbed";
+import { LoginComponentHarness } from "./login.harness.spec";
 
 const countries = ['Israel', 'USA'];
 
 @Component({
-  template: `<app-login [countries]="countries"></app-login>`
+  template: `
+    <app-login [countries]="countries"></app-login>`
 })
 class HostComponent {
   countries = countries;
@@ -93,7 +94,7 @@ describe('LoginComponent With Harness', () => {
   let loader: HarnessLoader;
   let loginHarness: LoginComponentHarness;
 
-  beforeEach(async() => {
+  beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [HostComponent],
       imports: [
@@ -132,7 +133,7 @@ describe('LoginComponent With Harness', () => {
     };
     const spy = spyOn<EventEmitter<any>>(component.submit, 'emit');
 
-    await loginHarness.setFormData(formData);
+    await loginHarness.fillForm(formData);
     await loginHarness.submit();
 
     expect(spy).toHaveBeenCalledWith({ country: countries[1], ...formData });

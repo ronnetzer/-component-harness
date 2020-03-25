@@ -1,6 +1,6 @@
-import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
-import {FormControl, FormGroup, Validators} from "@angular/forms";
-import {MatSelect} from "@angular/material/select";
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { MatSelect } from "@angular/material/select";
 
 export interface User {
   name: string;
@@ -8,6 +8,7 @@ export interface User {
   password: string;
   country?: string;
 }
+
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
@@ -27,7 +28,8 @@ export class LoginComponent implements OnInit {
 
   @ViewChild(MatSelect, { static: true }) select: MatSelect;
 
-  constructor() { }
+  constructor() {
+  }
 
   ngOnInit(): void {
     this.setDefaultCountry(this.countries);
