@@ -1,44 +1,29 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { HarnessLoader } from '@angular/cdk/testing';
+import { By } from '@angular/platform-browser';
 
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { EventEmitter } from '@angular/core';
+import { MatOption } from '@angular/material/core';
+import { MatSelect } from '@angular/material/select';
+import { LoginModule } from './login.module';
 import { LoginComponent, User } from './login.component';
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { LoginModule } from "./login.module";
-import { Component, EventEmitter, Input } from "@angular/core";
-import { By } from "@angular/platform-browser";
-import { MatSelect } from "@angular/material/select";
-import { MatOption } from "@angular/material/core";
-import { HarnessLoader } from "@angular/cdk/testing";
-import { TestbedHarnessEnvironment } from "@angular/cdk/testing/testbed";
-import { LoginComponentHarness } from "./login.harness.spec";
+import { LoginComponentHarness } from './login.harness.spec';
 
-const countries = ['Israel', 'USA'];
-
-@Component({
-  template: `
-    <app-login [countries]="countries"></app-login>`
-})
-class HostComponent {
-  countries = countries;
-}
+const testCountries = ['Israel', 'US'];
 
 describe('LoginComponent', () => {
+  let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
-  let fixture: ComponentFixture<HostComponent>;
 
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [HostComponent],
-      imports: [
-        NoopAnimationsModule,
-        LoginModule
-      ]
-    })
-      .compileComponents()
-  }));
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [NoopAnimationsModule, LoginModule]
+    }).compileComponents();
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(HostComponent);
-    component = fixture.debugElement.query(By.directive(LoginComponent)).componentInstance;
+    fixture = TestBed.createComponent(LoginComponent);
+    component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
@@ -49,16 +34,23 @@ describe('LoginComponent', () => {
   it('should show countries from input in select dropdown', () => {
     const select = fixture.debugElement.query(By.directive(MatSelect));
 
+    component.countries = testCountries;
+    fixture.detectChanges();
+
     (select.componentInstance as MatSelect).open();
     fixture.detectChanges();
 
-    const optionTexts = fixture.debugElement.queryAll(By.directive(MatOption)).map(option => (option.componentInstance as MatOption).value);
+    const optionTexts = fixture.debugElement
+      .queryAll(By.directive(MatOption))
+      .map(option => (option.componentInstance as MatOption).value);
 
-    expect(optionTexts).toEqual(countries);
+    expect(optionTexts).toEqual(testCountries);
   });
 
-  it('should set first country as selected if possible', () => {
+  it('should set first country as selected on init', () => {
     const spy = spyOn(component, 'setDefaultCountry').and.callThrough();
+    component.countries = testCountries;
+    fixture.detectChanges();
 
     component.ngOnInit();
 
@@ -66,77 +58,88 @@ describe('LoginComponent', () => {
     const option = (select.componentInstance as MatSelect).selected as MatOption;
 
     expect(spy).toHaveBeenCalled();
-    expect(option.value).toEqual(countries[0]);
+    expect(option.value).toEqual(testCountries[0]);
   });
 
   it('should allow to submit if name, email and password are valid', () => {
-    const formData: User = {
+    const spy = spyOn<EventEmitter<any>>(component.submit, 'emit');
+    const submitButton = fixture.debugElement
+      .queryAll(By.css('button.submit'))
+      .find(debugElements => debugElements.nativeElement.innerText === 'Submit');
+    const formData: Partial<User> = {
       name: 'Ron Netzer',
       email: 'ron@e-square.io',
       password: 'test'
     };
-    const spy = spyOn<EventEmitter<any>>(component.submit, 'emit');
-    const submitButton = fixture.debugElement.queryAll(By.css('button')).find(debugElements => debugElements.nativeElement.innerText === 'Submit');
+
+    expect(submitButton.nativeElement.disabled).toBeTruthy();
 
     component.form.patchValue(formData);
     fixture.detectChanges();
     submitButton.nativeElement.click();
 
-    expect(spy).toHaveBeenCalledWith({ country: countries[0], ...formData });
+    expect(spy).toHaveBeenCalledWith({ country: null, ...formData });
   });
-
 });
 
-
 describe('LoginComponent With Harness', () => {
-  let fixture: ComponentFixture<HostComponent>;
+  let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
   let loader: HarnessLoader;
   let loginHarness: LoginComponentHarness;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [HostComponent],
-      imports: [
-        NoopAnimationsModule,
-        LoginModule
-      ]
+      imports: [NoopAnimationsModule, LoginModule]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(HostComponent);
-    component = fixture.debugElement.query(By.directive(LoginComponent)).componentInstance;
+    fixture = TestBed.createComponent(LoginComponent);
+    component = fixture.componentInstance;
     loader = TestbedHarnessEnvironment.loader(fixture);
 
-    loginHarness = await loader.getHarness(LoginComponentHarness);
+    /**
+     * wont work.
+     * Angular does not set the proper tag name on the fixture,
+     * if the component is bootstrapped directly, therefore the harness wont be found.
+     * this should be used when the fixture is a host component that hosts the tested component/directive
+     */
+    // loginHarness = await loader.getHarness(LoginComponent);
+
+    loginHarness = await TestbedHarnessEnvironment.harnessForFixture(
+      fixture,
+      LoginComponentHarness
+    );
   });
 
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
 
   it('should show countries from input in select dropdown', async () => {
-    const optionTexts = await loginHarness.getCountries();
+    await loginHarness.setCountries(component, testCountries);
 
-    expect(optionTexts).toEqual(countries);
+    expect(await loginHarness.getCountries()).toEqual(testCountries);
   });
 
-  it('should set first country as selected if possible', async () => {
-    const selectedOption = await loginHarness.getSelectedCountry();
+  it('should set first country as selected on init', async () => {
+    await loginHarness.setCountries(component, testCountries);
 
-    expect(selectedOption).toEqual(countries[0]);
+    component.ngOnInit();
+
+    expect(await loginHarness.getSelectedCountry()).toEqual(testCountries[0]);
   });
-
 
   it('should allow to submit if name, email and password are valid', async () => {
-    const formData: User = {
+    const spy = spyOn<EventEmitter<any>>(component.submit, 'emit');
+    const formData: Partial<User> = {
       name: 'Ron Netzer',
-      country: countries[1],
       email: 'ron@e-square.io',
       password: 'test'
     };
-    const spy = spyOn<EventEmitter<any>>(component.submit, 'emit');
 
     await loginHarness.fillForm(formData);
     await loginHarness.submit();
 
-    expect(spy).toHaveBeenCalledWith({ country: countries[1], ...formData });
+    expect(spy).toHaveBeenCalledWith({ country: null, ...formData });
   });
-
 });

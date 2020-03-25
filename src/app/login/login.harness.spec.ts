@@ -1,20 +1,19 @@
-import { AsyncFactoryFn, ComponentHarness } from '@angular/cdk/testing';
+import { ComponentHarness, AsyncFactoryFn } from '@angular/cdk/testing';
+import { OptionHarnessFilters } from '@angular/material/core/testing';
 import { MatSelectHarness } from '@angular/material/select/testing';
-import { OptionHarnessFilters } from "@angular/material/core/testing";
-import { MatButtonHarness } from "@angular/material/button/testing";
-import { MatFormFieldControlHarness, MatFormFieldHarness } from "@angular/material/form-field/testing";
-import { User } from "./login.component";
-import { MatInputHarness } from "@angular/material/input/testing";
-
+import { MatInputHarness } from '@angular/material/input/testing';
+import { MatButtonHarness } from '@angular/material/button/testing';
+import { MatFormFieldHarness } from '@angular/material/form-field/testing';
+import { LoginComponent, User } from './login.component';
 
 export class LoginComponentHarness extends ComponentHarness {
   static hostSelector = 'app-login';
 
-  protected getCountrySelect: AsyncFactoryFn<MatSelectHarness> =
-    this.locatorFor(MatSelectHarness);
+  protected getCountrySelect: AsyncFactoryFn<MatSelectHarness> = this.locatorFor(MatSelectHarness);
 
-  protected getSubmitButton: AsyncFactoryFn<MatButtonHarness> =
-    this.locatorFor(MatButtonHarness.with({ text: 'Submit' }));
+  protected getSubmitButton: AsyncFactoryFn<MatButtonHarness> = this.locatorFor(
+    MatButtonHarness.with({ text: 'Submit' })
+  );
 
   protected getFormField = (name: string): Promise<MatFormFieldHarness> =>
     this.locatorFor(MatFormFieldHarness.with({ floatingLabelText: new RegExp(name, 'i') }))();
@@ -40,6 +39,16 @@ export class LoginComponentHarness extends ComponentHarness {
     return this.getCountrySelect().then(select => select.getValueText());
   }
 
+  async setCountries(
+    component: LoginComponent,
+    countries: string[] = [],
+    init?: boolean
+  ): Promise<void> {
+    component.countries = countries;
+    init && component.ngOnInit();
+    return Promise.resolve();
+  }
+
   async selectCountry(filter: OptionHarnessFilters): Promise<void> {
     return this.getCountrySelect().then(select => select.clickOptions(filter));
   }
@@ -47,14 +56,14 @@ export class LoginComponentHarness extends ComponentHarness {
   async fillForm(data: Partial<User>): Promise<void[]> {
     return Promise.all(
       Object.keys(data).map(async key => {
-          const control = await this.getFormField(key).then(field => field.getControl());
-          if (control instanceof MatInputHarness) {
-            return control.setValue(data[key]);
-          } else {
-            return this.selectCountry({ text: data[key] });
-          }
+        const control = await this.getFormField(key).then(field => field.getControl());
+        if (control instanceof MatInputHarness) {
+          return control.setValue(data[key]);
+        } else {
+          return this.selectCountry({ text: data[key] });
         }
-      ));
-
+      })
+    );
   }
 }
+
